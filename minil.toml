@@ -1,0 +1,6 @@
+name = "Algorithm-AdaGrad"
+# badges = ["travis"]
+authority="cpan:HIDEAKIO"
+
+module_maker="ModuleBuildTiny"
+
