@@ -2,28 +2,26 @@
 #define ADAGRAD_HPP_
 
 #include <cmath>
+#include <cstddef>
 
 class AdaGrad {
 public:
-    AdaGrad() alpha_(0.5), sumOfGrandient_(0.0), numOfGradient_(0), current_(0.0) {
+    AdaGrad() : eta_(1.0), sumOfGradient_(0.0), numOfGradient_(0), current_(0.0) {
 
+    }
+
+    AdaGrad(double eta) : eta_(eta), sumOfGradient_(0.0), numOfGradient_(0), current_(0.0) {
     }
 
     virtual ~AdaGrad() {
     }
 
-    void update(double gradient) {
+    bool update(double gradient) {
         ++numOfGradient_;
-        sumOfGradient_ += gradient * gradient;
-        current_ = current_ - (alpha_ / sqrt(sumOfGradient_) * gradient);
-    }
-
-    void setAlpha(double alpha) {
-        alpha_ = alpha;
-    }
-
-    double getAlpha() const {
-        return alpha_;
+        double gradSquare = gradient * gradient;
+        sumOfGradient_ += gradSquare;
+        current_ = current_ - (eta_ / sqrt(1 + sumOfGradient_) * gradient);
+        return current_ > 0 ? true : false;
     }
 
     double getNumOfGradient() const {
@@ -35,7 +33,7 @@ public:
     }
 
 private:
-    double alpha_;
+    double eta_;
     double sumOfGradient_;
     size_t numOfGradient_;
     double current_;
