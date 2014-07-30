@@ -28,7 +28,9 @@
    "prereqs" : {
       "configure" : {
          "requires" : {
-            "Module::Build::Tiny" : "0.035"
+            "CPAN::Meta" : "0",
+            "CPAN::Meta::Prereqs" : "0",
+            "Module::Build::XSUtil" : "0.03"
          }
       },
       "develop" : {
@@ -52,6 +54,17 @@
       }
    },
    "release_status" : "unstable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/hideo55/p5-Algorithm-AdaGrad/issues"
+      },
+      "homepage" : "https://github.com/hideo55/p5-Algorithm-AdaGrad",
+      "repository" : {
+         "type" : "git",
+         "url" : "git://github.com/hideo55/p5-Algorithm-AdaGrad.git",
+         "web" : "https://github.com/hideo55/p5-Algorithm-AdaGrad"
+      }
+   },
    "version" : "0.01",
    "x_authority" : "cpan:HIDEAKIO"
 }

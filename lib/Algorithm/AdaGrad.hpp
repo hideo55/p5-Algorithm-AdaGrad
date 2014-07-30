@@ -24,6 +24,21 @@ public:
         return current_ > 0 ? true : false;
     }
 
+    virtual ~AdaGrad() {
+    }
+
+    bool update(double gradient) {
+        ++numOfGradient_;
+        double gradSquare = gradient * gradient;
+        sumOfGradient_ += gradSquare;
+        current_ = current_ - (eta_ / sqrt(1 + sumOfGradient_) * gradient);
+        return current_ > 0 ? true : false;
+    }
+
+    double classify(double weight) const {
+        return current_ * weight;
+    }
+
     double getNumOfGradient() const {
         return numOfGradient_;
     }

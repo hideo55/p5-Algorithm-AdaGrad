@@ -2,5 +2,9 @@ name = "Algorithm-AdaGrad"
 # badges = ["travis"]
 authority="cpan:HIDEAKIO"
 
-module_maker="ModuleBuildTiny"
+c_source= ['lib/Algorithm']
+
+[XSUtil]
+needs_compiler_cpp = 1
+generate_ppport_h = 'lib/Algorithm/ppport.h'
 
