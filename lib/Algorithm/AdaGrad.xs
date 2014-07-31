@@ -18,10 +18,10 @@ namespace std {
 
 #define MAGIC 1
 
-typedef std::unordered_map<std::string, double> features_type;
+typedef std::unordered_map<std::string, AdaGrad*> classifers_type;
 
 typedef struct AdaGradS {
-    std::unordered_map<std::string, AdaGrad*> classifers;
+    classifers_type classifers;
     double eta;
 }* AdaGradPtr;
 
@@ -38,8 +38,8 @@ static AdaGradPtr get_adagrad(pTHX_ SV* object, const char* context) {
     }
     sv = SvRV(object);
     if (!SvOBJECT(sv)) croak("%s is not an object reference", context);
-    if(!sv_derived_from(object,"Algorithm::HyperLogLog")) {
-        croak("%s is not a Algorithm::HyperLogLog", context);
+    if(!sv_derived_from(object,"Algorithm::AdaGrad")) {
+        croak("%s is not a Algorithm::AdaGrad", context);
     }
     address = SvIV(sv);
     if (!address)
@@ -47,16 +47,71 @@ static AdaGradPtr get_adagrad(pTHX_ SV* object, const char* context) {
     return INT2PTR(AdaGradPtr, address);
 }
 
+static void handleData(pTHX_ AdaGradPtr self, SV* sv) {
+    SvGETMAGIC (sv);
+    
+    if(!SvROK(sv) || SvTYPE(SvRV(sv)) != SVt_PVHV) {
+        croak("Parameter must be HASH-reference");
+    }
+
+    HV* hv = (HV*)SvRV(sv);
+    STRLEN len;
+
+    SV** tmpSV = hv_fetchs(hv, "label", 0);
+    if(tmpSV == NULL) {
+        croak("Invalid parameter: \"label\" does not exist.");
+    } else if(SvTYPE(*tmpSV) != SVt_IV){
+        croak("Invalid parameter: \"feature\" must be integer.");
+    }
+    IV label = SvIV(*tmpSV);
+    
+    tmpSV = hv_fetchs(hv, "data", 0);
+    if(tmpSV == NULL) {
+        croak("Invalid parameter: \"data\" does not exist.");
+    } else if(SvROK(*tmpSV) && SvTYPE(SvRV(*tmpSV)) != SVt_PVHV) {
+        croak("Invalid parameter: \"data\" must be HASH-reference.");
+    }
+    HV* features = (HV*)SvRV(*tmpSV);
+
+    hv_iterinit(features);
+    HE* he = NULL;
+    std::unordered_map<std::string, AdaGrad*>& classifers = self->classifers;
+    while ((he = hv_iternext(features))){
+        char* key = HePV(he, len);
+        std::string featStr = std::string(key, len);
+        SV* val = HeVAL(he);
+        if(SvTYPE(val) != SVt_NV){
+            croak("Invalid parameter: type of internal \"data\" must be number.");
+        }
+        NV nv = SvNV(val);
+        double gradient = nv * label;
+        if(classifers.find(featStr) == classifers.end()){
+            classifers.insert(std::make_pair(featStr, new AdaGrad(self->eta)));
+        }
+        AdaGrad* ag = classifers[featStr];
+        ag->update(gradient);
+    }
+}
+
 MODULE = Algorithm::AdaGrad PACKAGE = Algorithm::AdaGrad
 
 PROTOTYPES: DISABLE
 
 AdaGradPtr
-new(const char *klass, double eta)
+new(const char *klass, ...)
+PREINIT:
+    double eta = 0.0;
 CODE:
 {
+    if(items > 1){
+        if(SvTYPE(ST(1)) != SVt_NV){
+            croak("Parameter must be a number.");
+        }
+        eta = SvNV(ST(1));
+    }
     AdaGradPtr obj = NULL;
     New(__LINE__, obj, 1, struct AdaGradS);
+    obj->classifers = classifers_type();
     obj->eta = eta;
     RETVAL = obj;
 }
@@ -64,18 +119,33 @@ OUTPUT:
     RETVAL
 
 int
-update(AdaGradPtr self, SV* data)
+update(AdaGradPtr self, SV* sv)
 CODE:
-{
+{   
+    SvGETMAGIC (sv);
+    if(!SvROK(sv) || SvTYPE(SvRV(sv)) !=  SVt_PVAV) {
+        croak("Parameter must be ARRAY-reference");
+    }
+
+    AV* av = (AV*)SvRV(sv);
+    size_t arraySize = av_len(av);
+    for(size_t i = 0; i < arraySize; ++i){
+        SV** elm = av_fetch(av, i, 0);
+        if(elm != NULL){
+            handleData(self, *elm);       
+        }
+    }
     RETVAL = 0;
 }
 OUTPUT:
     RETVAL
 
 int
-classify(AdaGradPtr self, SV* data)
+classify(AdaGradPtr self, SV* sv)
 CODE:
 {
+    
+
     RETVAL = 0;
 }
 OUTPUT:
