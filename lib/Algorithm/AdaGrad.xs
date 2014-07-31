@@ -7,6 +7,7 @@ extern "C" {
 }
 #include "AdaGrad.hpp"
 #include <string>
+
 #if __cplusplus < 201103L
 #include <tr1/unordered_map>
 namespace std {
@@ -21,7 +22,7 @@ namespace std {
 typedef std::unordered_map<std::string, AdaGrad*> classifers_type;
 
 typedef struct AdaGradS {
-    classifers_type classifers;
+    classifers_type* classifers;
     double eta;
 }* AdaGradPtr;
 
@@ -75,7 +76,7 @@ static void handleData(pTHX_ AdaGradPtr self, SV* sv) {
 
     hv_iterinit(features);
     HE* he = NULL;
-    std::unordered_map<std::string, AdaGrad*>& classifers = self->classifers;
+    std::unordered_map<std::string, AdaGrad*>& classifers = *(self->classifers);
     while ((he = hv_iternext(features))){
         char* key = HePV(he, len);
         std::string featStr = std::string(key, len);
@@ -111,7 +112,7 @@ CODE:
     }
     AdaGradPtr obj = NULL;
     New(__LINE__, obj, 1, struct AdaGradS);
-    obj->classifers = classifers_type();
+    obj->classifers = new classifers_type();
     obj->eta = eta;
     RETVAL = obj;
 }
@@ -144,9 +145,35 @@ int
 classify(AdaGradPtr self, SV* sv)
 CODE:
 {
+/*
+    if(!SvROK(sv) || SvTYPE(SvRV(sv)) != SVt_PVHV) {
+        croak("Parameter must be HASH-reference");
+    }
     
+    HV* features = (HV*)SvRV(sv);
 
-    RETVAL = 0;
+    hv_iterinit(features);
+    HE* he = NULL;
+    STRLEN len;
+    std::unordered_map<std::string, AdaGrad*>& classifers = self->classifers;
+    double margin = 0.0;
+    while ((he = hv_iternext(features))){
+        char* key = HePV(he, len);
+        std::string featStr = std::string(key, len);
+        if(classifers.find(featStr) == classifers.end()){
+            continue;
+        }
+        AdaGrad* ag = classifers[featStr];
+        
+        SV* val = HeVAL(he);
+        if(SvTYPE(val) != SVt_NV){
+            croak("Invalid parameter: type of internal \"data\" must be number.");
+        }
+        NV nv = SvNV(val);
+        margin += ag->classify(nv);
+    }
+    RETVAL = margin;
+    */
 }
 OUTPUT:
     RETVAL
@@ -155,12 +182,13 @@ void
 DESTROY(AdaGradPtr self)
 CODE:
 {
-    std::unordered_map<std::string, AdaGrad*>& classifers = self->classifers;
+    std::unordered_map<std::string, AdaGrad*>& classifers = *(self->classifers);
     std::unordered_map<std::string, AdaGrad*>::iterator iter = classifers.begin();
     std::unordered_map<std::string, AdaGrad*>::iterator iter_end = classifers.end();   
     for(;iter != iter_end; ++iter){
         Safefree(iter->second);
     }
+    Safefree (self->classifers);
     Safefree (self);
 }
 
