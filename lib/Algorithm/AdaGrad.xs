@@ -1,4 +1,7 @@
 #define PERL_NO_GET_CONTEXT
+
+#pragma GCC diagnostic ignored "-Wreserved-user-defined-literal"
+
 extern "C" {
 #include "EXTERN.h"
 #include "perl.h"
@@ -18,6 +21,11 @@ namespace std {
 #endif
 
 #define MAGIC 1
+
+enum {
+    POSITIVE_LABEL = 1,
+    NEGATIVE_LABEL = -1,
+};
 
 typedef std::unordered_map<std::string, AdaGrad*> classifers_type;
 
@@ -48,11 +56,11 @@ static AdaGradPtr get_adagrad(pTHX_ SV* object, const char* context) {
     return INT2PTR(AdaGradPtr, address);
 }
 
-static void handleData(pTHX_ AdaGradPtr self, SV* sv) {
+static void handleUpdate(pTHX_ AdaGradPtr self, SV* sv) {
     SvGETMAGIC (sv);
     
     if(!SvROK(sv) || SvTYPE(SvRV(sv)) != SVt_PVHV) {
-        croak("Parameter must be HASH-reference");
+        croak("Invalid parameter: parameter must be HASH-reference");
     }
 
     HV* hv = (HV*)SvRV(sv);
@@ -62,9 +70,12 @@ static void handleData(pTHX_ AdaGradPtr self, SV* sv) {
     if(tmpSV == NULL) {
         croak("Invalid parameter: \"label\" does not exist.");
     } else if(SvTYPE(*tmpSV) != SVt_IV){
-        croak("Invalid parameter: \"feature\" must be integer.");
+        croak("Invalid parameter: \"label\" must be 1 or -1.");
     }
     IV label = SvIV(*tmpSV);
+    if(label != POSITIVE_LABEL && label != NEGATIVE_LABEL){
+        croak("Invalid parameter: \"label\" must be 1 or -1.");
+    }
     
     tmpSV = hv_fetchs(hv, "data", 0);
     if(tmpSV == NULL) {
@@ -85,7 +96,7 @@ static void handleData(pTHX_ AdaGradPtr self, SV* sv) {
             croak("Invalid parameter: type of internal \"data\" must be number.");
         }
         NV nv = SvNV(val);
-        double gradient = nv * label;
+        double gradient = -1.0 * nv * label;
         if(classifers.find(featStr) == classifers.end()){
             classifers.insert(std::make_pair(featStr, new AdaGrad(self->eta)));
         }
@@ -130,10 +141,10 @@ CODE:
 
     AV* av = (AV*)SvRV(sv);
     size_t arraySize = av_len(av);
-    for(size_t i = 0; i < arraySize; ++i){
+    for(size_t i = 0; i <= arraySize; ++i){
         SV** elm = av_fetch(av, i, 0);
         if(elm != NULL){
-            handleData(self, *elm);       
+            handleUpdate(self, *elm);       
         }
     }
     RETVAL = 0;
@@ -145,7 +156,6 @@ int
 classify(AdaGradPtr self, SV* sv)
 CODE:
 {
-/*
     if(!SvROK(sv) || SvTYPE(SvRV(sv)) != SVt_PVHV) {
         croak("Parameter must be HASH-reference");
     }
@@ -155,15 +165,16 @@ CODE:
     hv_iterinit(features);
     HE* he = NULL;
     STRLEN len;
-    std::unordered_map<std::string, AdaGrad*>& classifers = self->classifers;
+    std::unordered_map<std::string, AdaGrad*>& classifers = *(self->classifers);
     double margin = 0.0;
     while ((he = hv_iternext(features))){
         char* key = HePV(he, len);
         std::string featStr = std::string(key, len);
-        if(classifers.find(featStr) == classifers.end()){
+        classifers_type::const_iterator iter = classifers.find(featStr);
+        if(iter == classifers.end()){
             continue;
         }
-        AdaGrad* ag = classifers[featStr];
+        AdaGrad* ag = iter->second;
         
         SV* val = HeVAL(he);
         if(SvTYPE(val) != SVt_NV){
@@ -172,8 +183,8 @@ CODE:
         NV nv = SvNV(val);
         margin += ag->classify(nv);
     }
-    RETVAL = margin;
-    */
+
+    RETVAL = margin >= 0 ? POSITIVE_LABEL : NEGATIVE_LABEL;
 }
 OUTPUT:
     RETVAL
