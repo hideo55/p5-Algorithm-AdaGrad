@@ -13,6 +13,7 @@ sub new {
         ],
         meta_add          => { keywords => [qw/AdaGrad/], },
         needs_compiler_cpp => 11,
+        extra_compiler_flags => [qw/-Wno-format-security -Wno-duplicate-decl-specifier -Wno-reserved-user-defined-literal/],
     );
 }
 

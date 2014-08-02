@@ -1,7 +1,5 @@
 #define PERL_NO_GET_CONTEXT
 
-#pragma GCC diagnostic ignored "-Wreserved-user-defined-literal"
-
 extern "C" {
 #include "EXTERN.h"
 #include "perl.h"
