@@ -28,7 +28,7 @@
    "prereqs" : {
       "configure" : {
          "requires" : {
-            "Module::Build::XSUtil" : "0.03"
+            "Module::Build::XSUtil" : "0.12"
          }
       },
       "develop" : {

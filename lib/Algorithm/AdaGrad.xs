@@ -36,6 +36,7 @@ typedef struct AdaGradS {
 
 #define GET_ADAGRAD_PTR(x) get_adagrad(aTHX_ x, "$self")
 
+
 static AdaGradPtr get_adagrad(pTHX_ SV* object, const char* context) {
     SV *sv;
     IV address;
@@ -54,6 +55,20 @@ static AdaGradPtr get_adagrad(pTHX_ SV* object, const char* context) {
     if (!address)
     croak("Algorithm::AdaGrad object %s has a NULL pointer", context);
     return INT2PTR(AdaGradPtr, address);
+}
+
+static double getDoubleValue(pTHX_ SV* sv, const char* errMsg) {
+    svtype svt = SvTYPE(sv);
+    if(svt != SVt_NV && svt != SVt_IV){
+        croak(errMsg);
+    }
+    double ret;
+    if(svt == SVt_IV){
+        ret = SvIV(sv);
+    }else{
+        ret = SvNV(sv);
+    }
+    return ret;
 }
 
 static void handleUpdate(pTHX_ AdaGradPtr self, SV* sv) {
@@ -80,7 +95,7 @@ static void handleUpdate(pTHX_ AdaGradPtr self, SV* sv) {
     tmpSV = hv_fetchs(hv, "data", 0);
     if(tmpSV == NULL) {
         croak("Invalid parameter: \"data\" does not exist.");
-    } else if(SvROK(*tmpSV) && SvTYPE(SvRV(*tmpSV)) != SVt_PVHV) {
+    } else if(!SvROK(*tmpSV) || SvTYPE(SvRV(*tmpSV)) != SVt_PVHV) {
         croak("Invalid parameter: \"data\" must be HASH-reference.");
     }
     HV* features = (HV*)SvRV(*tmpSV);
@@ -92,11 +107,8 @@ static void handleUpdate(pTHX_ AdaGradPtr self, SV* sv) {
         char* key = HePV(he, len);
         std::string featStr = std::string(key, len);
         SV* val = HeVAL(he);
-        if(SvTYPE(val) != SVt_NV){
-            croak("Invalid parameter: type of internal \"data\" must be number.");
-        }
-        NV nv = SvNV(val);
-        double gradient = -1.0 * nv * label;
+        double gradient = getDoubleValue(val, "Invalid parameter: type of internal \"data\" must be number.");
+        gradient *= -1.0 * label;
         if(classifers.find(featStr) == classifers.end()){
             classifers.insert(std::make_pair(featStr, new AdaGrad(self->eta)));
         }
@@ -116,10 +128,8 @@ PREINIT:
 CODE:
 {
     if(items > 1){
-        if(SvTYPE(ST(1)) != SVt_NV){
-            croak("Parameter must be a number.");
-        }
-        eta = SvNV(ST(1));
+        SV* arg_sv = ST(1);
+        eta = getDoubleValue(arg_sv, "Parameter must be a number.");
     }
     AdaGradPtr obj = NULL;
     New(__LINE__, obj, 1, struct AdaGradS);
@@ -157,7 +167,7 @@ classify(AdaGradPtr self, SV* sv)
 CODE:
 {
     if(!SvROK(sv) || SvTYPE(SvRV(sv)) != SVt_PVHV) {
-        croak("Parameter must be HASH-reference");
+        croak("Invalid parameter: Parameter must be HASH-reference.");
     }
     
     HV* features = (HV*)SvRV(sv);
@@ -177,11 +187,8 @@ CODE:
         AdaGrad* ag = iter->second;
         
         SV* val = HeVAL(he);
-        if(SvTYPE(val) != SVt_NV){
-            croak("Invalid parameter: type of internal \"data\" must be number.");
-        }
-        NV nv = SvNV(val);
-        margin += ag->classify(nv);
+        double gradient = getDoubleValue(val, "Invalid parameter: type of parameter must be number.");
+        margin += ag->classify(gradient);
     }
 
     RETVAL = margin >= 0 ? POSITIVE_LABEL : NEGATIVE_LABEL;
