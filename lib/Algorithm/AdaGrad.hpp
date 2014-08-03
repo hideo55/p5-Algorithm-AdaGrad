@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <iostream>
 
 class AdaGrad {
 public:
@@ -34,6 +35,20 @@ public:
 
     double getValue() const {
         return current_;
+    }
+
+    void save(std::ostream& os) const {
+        os.write(reinterpret_cast<const char*>(&eta_), sizeof(double));
+        os.write(reinterpret_cast<const char*>(&sumOfGradient_), sizeof(double));
+        os.write(reinterpret_cast<const char*>(&numOfGradient_), sizeof(size_t));
+        os.write(reinterpret_cast<const char*>(&current_), sizeof(double));
+    }
+
+    void load(std::istream& is) {
+        is.read(reinterpret_cast<char*>(&eta_), sizeof(double));
+        is.read(reinterpret_cast<char*>(&sumOfGradient_), sizeof(double));
+        is.read(reinterpret_cast<char*>(&numOfGradient_), sizeof(size_t));
+        is.read(reinterpret_cast<char*>(&current_), sizeof(double));
     }
 
 private:

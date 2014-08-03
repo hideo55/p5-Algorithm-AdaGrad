@@ -1,13 +1,16 @@
 #define PERL_NO_GET_CONTEXT
 
+#include "AdaGrad.hpp"
+#include <string>
+#include <fstream>
+
+#define do_open Perl_do_open
 extern "C" {
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
 #include "ppport.h"
 }
-#include "AdaGrad.hpp"
-#include <string>
 
 #if __cplusplus < 201103L
 #include <tr1/unordered_map>
@@ -115,6 +118,71 @@ static void handleUpdate(pTHX_ AdaGradPtr self, SV* sv) {
     }
 }
 
+
+static void _save(pTHX_ AdaGradPtr self, SV* sv) {
+    if(SvTYPE(sv) != SVt_PV && SvTYPE(sv) != SVt_PVMG){
+        croak("Invalid parameter: the parameter must be string.");
+    }
+    STRLEN len;
+    const char* filename = SvPV(sv, len);
+    std::ofstream ofs(filename);
+    std::unordered_map<std::string, AdaGrad*>& classifers = *(self->classifers);
+    
+    ofs.write(reinterpret_cast<const char*>(&(self->eta)), sizeof(double));
+    size_t featureNum = classifers.size();
+    ofs.write(reinterpret_cast<const char*>(&featureNum), sizeof(size_t));
+    
+    std::unordered_map<std::string, AdaGrad*>::iterator iter = classifers.begin();
+    std::unordered_map<std::string, AdaGrad*>::iterator iter_end = classifers.end();  
+    for(;iter != iter_end; ++iter){
+        size_t size = iter->first.size();
+        ofs.write(reinterpret_cast<const char*>(&size), sizeof(size_t));
+        ofs.write(iter->first.c_str(), sizeof(char) * size);
+        iter->second->save(ofs);
+    }
+    if(ofs.fail()) {
+        croak("Failed to save file: %s", filename);
+    }
+    ofs.close();
+}
+
+static void _load(pTHX_ AdaGradPtr self, SV* sv) {
+    if(SvTYPE(sv) != SVt_PV && SvTYPE(sv) != SVt_PVMG){
+        croak("Invalid parameter: the parameter must be string.");
+    }
+    STRLEN len;
+    const char* filename = SvPV(sv, len);
+    
+    std::ifstream ifs(filename);
+    
+    ifs.read(reinterpret_cast<char*>(&(self->eta)), sizeof(double));
+    
+    size_t featNum = 0;
+    ifs.read(reinterpret_cast<char*>(&featNum), sizeof(size_t));
+    
+    std::unordered_map<std::string, AdaGrad*>& classifers = *(self->classifers);
+    classifers.clear();
+    
+    for(size_t i = 0; i < featNum; ++i){
+        size_t size = 0;
+        ifs.read(reinterpret_cast<char*>(&size), sizeof(size_t));
+        char* feature = new char[size];
+        ifs.read(feature, sizeof(char) * size);
+        std::string featStr(feature, size);
+        delete[] feature;
+        AdaGrad* newObj = new AdaGrad();
+        newObj->load(ifs);
+        classifers.insert(std::make_pair(featStr, newObj));
+    }
+    
+    if(ifs.fail()) {
+        croak("Failed to load file: %s", filename);
+    }
+    
+    ifs.close();
+}
+
+
 MODULE = Algorithm::AdaGrad PACKAGE = Algorithm::AdaGrad
 
 PROTOTYPES: DISABLE
@@ -194,6 +262,20 @@ CODE:
 OUTPUT:
     RETVAL
 
+
+void save(AdaGradPtr self, SV* sv)
+CODE:
+{
+    _save(self, sv);
+}
+
+void
+load(AdaGradPtr self, SV* sv)
+CODE:
+{
+    _load(self, sv);
+}
+    
 void
 DESTROY(AdaGradPtr self)
 CODE:
