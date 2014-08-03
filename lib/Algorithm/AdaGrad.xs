@@ -93,11 +93,11 @@ static void handleUpdate(pTHX_ AdaGradPtr self, SV* sv) {
         croak("Invalid parameter: \"label\" must be 1 or -1.");
     }
     
-    tmpSV = hv_fetchs(hv, "data", 0);
+    tmpSV = hv_fetchs(hv, "features", 0);
     if(tmpSV == NULL) {
-        croak("Invalid parameter: \"data\" does not exist.");
+        croak("Invalid parameter: \"features\" does not exist.");
     } else if(!SvROK(*tmpSV) || SvTYPE(SvRV(*tmpSV)) != SVt_PVHV) {
-        croak("Invalid parameter: \"data\" must be HASH-reference.");
+        croak("Invalid parameter: \"features\" must be HASH-reference.");
     }
     HV* features = (HV*)SvRV(*tmpSV);
 
@@ -108,7 +108,7 @@ static void handleUpdate(pTHX_ AdaGradPtr self, SV* sv) {
         char* key = HePV(he, len);
         std::string featStr = std::string(key, len);
         SV* val = HeVAL(he);
-        double gradient = getDoubleValue(val, "Invalid parameter: type of internal \"data\" must be number.");
+        double gradient = getDoubleValue(val, "Invalid parameter: type of internal \"features\" must be number.");
         gradient *= -1.0 * label;
         if(classifers.find(featStr) == classifers.end()){
             classifers.insert(std::make_pair(featStr, new AdaGrad(self->eta)));
