@@ -1,4 +1,4 @@
-requires 'perl', '5.008001';
+requires 'perl', '5.012000';
 
 on 'configure' => sub{
     requires 'Module::Build::XSUtil', '0.14';

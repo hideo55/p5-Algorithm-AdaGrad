@@ -1,11 +1,11 @@
 package Algorithm::AdaGrad;
-use 5.008005;
+use 5.012;
 use strict;
 use warnings;
 use XSLoader;
 
 BEGIN{
-    our $VERSION = "0.01";
+    our $VERSION = "0.01_01";
     XSLoader::load __PACKAGE__, $VERSION;
 }
 
