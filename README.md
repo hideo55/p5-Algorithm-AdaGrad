@@ -31,13 +31,13 @@ This module can using for binary classification.
 ## new($eta)
 
 Constructor.
-\`$eta\` is learning ratio.
+`$eta` is learning ratio.
 
 ## update($learning\_data)
 
 Executes learning.
 
-\`$learning\_date\` is ArrayRef like bellow.
+`$learning_date` is ArrayRef like bellow.
 
     $ag->update([
         { "label" => -1, "features" => { "R" => 0.0, "G" => 1.0, "B" => 0.0 } },
@@ -47,15 +47,15 @@ Executes learning.
         { "label" => 1,  "features" => { "R" => 1.0, "G" => 1.0, "B" => 0.0 } }
     ]);
 
-\`features\` is set of feature-string and value(real number) pair.
-\`label\` is a expected output label (+1 or -1).
+`features` is set of feature-string and value(real number) pair.
+`label` is a expected output label (+1 or -1).
 
 ## classify($features)
 
 Executes binary classification. 
 Returns 1 or -1.
 
-\`$features\` is HashRef like bellow.
+`$features` is HashRef like bellow.
 
     my $result = $ag->classify({ "R" => 1.0, "G" => 1.0, "B" => 0.0 });
 
