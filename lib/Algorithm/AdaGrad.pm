@@ -54,7 +54,7 @@ C<$eta> is learning ratio.
 
 Executes learning.
 
-C<$learning_date> is ArrayRef like bellow.
+C<$learning_data> is ArrayRef like bellow.
 
     $ag->update([
         { "label" => -1, "features" => { "R" => 0.0, "G" => 1.0, "B" => 0.0 } },

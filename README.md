@@ -37,7 +37,7 @@ Constructor.
 
 Executes learning.
 
-`$learning_date` is ArrayRef like bellow.
+`$learning_data` is ArrayRef like bellow.
 
     $ag->update([
         { "label" => -1, "features" => { "R" => 0.0, "G" => 1.0, "B" => 0.0 } },
