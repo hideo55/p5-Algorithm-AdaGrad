@@ -24,7 +24,7 @@ Algorithm::AdaGrad - AdaGrad learning algorithm.
 # DESCRIPTION
 
 Algorithm::AdaGrad is implementation of AdaGrad(Adaptive Gradient) online learning algorithm. 
-This module can using for binary classification.
+This module can be use for binary classification.
 
 # METHODS
 
