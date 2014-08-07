@@ -91,14 +91,14 @@ John Duchi, Elad Hazan, Yoram Singer. Adaptive Subgradient Methods for Online Le
 
 =head1 LICENSE
 
-Copyright (C) hideo55.
+Copyright (C) Hideaki Ohno.
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
-hideo55 E<lt>hide.o.j55@gmail.comE<gt>
+Hideaki Ohno E<lt>hide.o.j55@gmail.comE<gt>
 
 =cut
 
